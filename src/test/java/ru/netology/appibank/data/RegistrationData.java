@@ -2,16 +2,35 @@ package ru.netology.appibank.data;
 
 
 import com.github.javafaker.Faker;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
 import lombok.Value;
 
 import java.util.Locale;
 import java.util.Random;
 
-public class RegistrationData {
-    private String login;
-    private String password;
-    private String status;
+import static io.restassured.RestAssured.given;
 
+public class RegistrationData {
+
+    private static RequestSpecification requestSpec = new RequestSpecBuilder()
+            .setBaseUri("http://localhost")
+            .setPort(9999)
+            .setAccept(ContentType.JSON)
+            .setContentType(ContentType.JSON)
+            .build();
+
+
+    static void setUpUser(UserInfo user) {
+        given()
+                .spec(requestSpec)
+                .body(user)
+                .when()
+                .post("/api/system/users")
+                .then()
+                .statusCode(200);
+    }
     public static String generateName(String locale) {
         Faker faker = new Faker(new Locale(locale));
         String name = faker.name().firstName();
@@ -35,13 +54,20 @@ public class RegistrationData {
         private Registration() {
         }
 
-        public static UserInfo generateUser(String locale) {
+        public static UserInfo generateUser(String status) {
             UserInfo user = new UserInfo(
-                    generateName(locale),
-                    generatePassword(locale),
-                    generateStatus(locale)
+                    generateName("en"),
+                    generatePassword("en"),
+                    status
             );
             return user;
+        }
+
+        public static UserInfo getActiveUser(String status) {
+            UserInfo activeUser = generateUser(status);
+            setUpUser(activeUser);
+
+            return activeUser;
         }
     }
 
@@ -50,11 +76,5 @@ public class RegistrationData {
         String login;
         String password;
         String status;
-    }
-
-    public RegistrationData(String login, String password, String status) {
-        this.login = login;
-        this.password = password;
-        this.status = status;
     }
 }
